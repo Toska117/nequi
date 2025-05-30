@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi App Financiera</title>
+  <!-- Carga de la fuente Manrope desde Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope&display=swap" rel="stylesheet">
+  <!-- Vinculación del archivo CSS -->
+  <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+  <div id="splash"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:#f3f3f5;display:flex;align-items:center;justify-content:center;">
+    <img id="splashImg" src="nplash.png" alt="Splash" style="width:180px;transition:transform 0.7s cubic-bezier(.68,-0.55,.27,1.55);">
+  </div>
+  <!-- Página de Autenticación (Login/Registro) -->
+  <div id="authPage">
+    <!-- Contenedor central con la imagen -->
+    <div class="image-container">
+      <!-- Reemplaza "ruta-de-tu-imagen.jpg" por la ruta de tu imagen -->
+      <img src="nequi_inicio.png" alt="Imagen de login">
+    </div>
+    <!-- Paso 1: Ingreso de teléfono -->
+    <div class="login-form-container" id="loginStep1">
+      <input type="text" id="loginPhone" placeholder="Número de Teléfono (Ej.: 3121234567)">
+      <button onclick="goToPinStep()">Siguiente</button>
+      <p>¿No tienes cuenta? <span class="link" onclick="showRegister()">Regístrate</span></p>
+      <p>¿Eres admin? <span class="link" onclick="showAdminLogin()">Ingresa aquí</span></p>
+    </div>
+
+    <!-- Paso 2: Ingreso de PIN -->
+    <div class="login-form-container hidden" id="loginStep2">
+      <div id="loginPhoneDisplay" style="margin-bottom:10px;font-weight:bold;"></div>
+      <input type="password" id="loginPin" placeholder="PIN" maxlength="4" readonly style="text-align:center;font-size:1.5em;">
+      <div id="pinPad" style="display:grid;grid-template-columns:repeat(3,50px);gap:8px;justify-content:center;margin:16px 0;">
+        <button type="button" onclick="addPinDigit('1')">1</button>
+        <button type="button" onclick="addPinDigit('2')">2</button>
+        <button type="button" onclick="addPinDigit('3')">3</button>
+        <button type="button" onclick="addPinDigit('4')">4</button>
+        <button type="button" onclick="addPinDigit('5')">5</button>
+        <button type="button" onclick="addPinDigit('6')">6</button>
+        <button type="button" onclick="addPinDigit('7')">7</button>
+        <button type="button" onclick="addPinDigit('8')">8</button>
+        <button type="button" onclick="addPinDigit('9')">9</button>
+        <button type="button" onclick="removePinDigit()">←</button>
+        <button type="button" onclick="addPinDigit('0')">0</button>
+        <button type="button" onclick="clearPin()">C</button>
+      </div>
+      <button onclick="login()">Ingresar</button>
+      <p><span class="link" onclick="backToPhone()">Volver</span></p>
+    </div>
+    
+    <!-- Registro (se oculta por defecto) -->
+    <div id="registerCard" class="hidden">
+      <h2>Registrarse</h2>
+      <input type="text" id="regPhone" placeholder="Número de Teléfono (Ej.: 3149876543)">
+      <input type="text" id="regName" placeholder="Nombre">
+      <input type="text" id="regLastname" placeholder="Apellido">
+      <input type="password" id="regPin" placeholder="PIN (4 dígitos)">
+      <button onclick="register()">Registrarse</button>
+      <p>¿Ya tienes cuenta? <span class="link" onclick="showLogin()">Inicia Sesión</span></p>
+    </div>
+
+    <!-- Sección de Login Admin -->
+    <div id="adminLoginCard" class="hidden">
+      <h2>¿Eres admin?</h2>
+      <input type="text" id="adminUser" placeholder="Usuario admin">
+      <input type="password" id="adminPass" placeholder="PIN admin">
+      <button onclick="loginAdmin()">Ingresar como admin</button>
+      <p>¿No eres admin? <span class="link" onclick="showLogin()">Volver</span></p>
+      <div id="adminLoginMsg" style="margin-top:10px;color:#c00;"></div>
+    </div>
+  </div>
+
+  <!-- Página del Dashboard (sin cambios) -->
+  <div id="dashboardPage" class="hidden">
+    <header>
+      <h1>Panel de Control</h1>
+    </header>
+    <div class="container">
+      <!-- Recuadro del saldo -->
+      <div id="balanceSection">
+        <h2>Saldo</h2>
+        <p id="balanceText">Saldo disponible: $0</p>
+      </div>
+      <!-- Sección de Historial -->
+      <div id="historySection" class="card hidden">
+        <h2>Historial</h2>
+        <ul id="transactionList">
+          <!-- Aquí se listarán las transacciones -->
+        </ul>
+      </div>
+      <!-- Sección de Consultas -->
+      <div id="consultaSection" class="card hidden">
+        <h2>Consultas</h2>
+        <p>Aquí se mostrarán otras consultas.</p>
+      </div>
+    </div>
+    <!-- Menú inferior (navegación) -->
+    <nav>
+      <button onclick="showBalance()">Saldo</button>
+      <button onclick="showHistory()">Historial</button>
+      <button onclick="showConsulta()">Consultas</button>
+      <button onclick="logout()">Salir</button>
+    </nav>
+  </div>
+
+  <!-- Vinculación del archivo JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="script.js"></script>
+  <script>
+    async function loginAdmin() {
+      const user = document.getElementById('adminUser').value.trim();
+      const pin = document.getElementById('adminPass').value.trim();
+      const msg = document.getElementById('adminLoginMsg');
+      msg.style.color = "#c00";
+
+      if (user !== "3166144541") {
+        msg.textContent = "Acceso denegado.";
+        return;
+      }
+
+      // Validar en Supabase
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('phone_number', user)
+        .eq('pin', pin)
+        .single();
+
+      if (error || !data) {
+        msg.textContent = "Usuario o PIN incorrecto.";
+        return;
+      }
+
+      // Acceso solo si es el admin exacto
+      sessionStorage.setItem('currentUser', JSON.stringify(data));
+      window.location.href = "admin.html";
+    }
+
+    function goToPinStep() {
+      const phone = document.getElementById('loginPhone').value.trim();
+      if (!/^\d{10}$/.test(phone)) {
+        alert("Ingresa un número de teléfono válido.");
+        return;
+      }
+      document.getElementById('loginStep1').classList.add('hidden');
+      document.getElementById('loginStep2').classList.remove('hidden');
+      document.getElementById('loginPhoneDisplay').textContent = "Usuario: " + phone;
+      document.getElementById('loginPin').value = "";
+    }
+
+    function backToPhone() {
+      document.getElementById('loginStep2').classList.add('hidden');
+      document.getElementById('loginStep1').classList.remove('hidden');
+    }
+
+    function addPinDigit(digit) {
+      const pinInput = document.getElementById('loginPin');
+      if (pinInput.value.length < 4) {
+        pinInput.value += digit;
+      }
+    }
+
+    function removePinDigit() {
+      const pinInput = document.getElementById('loginPin');
+      pinInput.value = pinInput.value.slice(0, -1);
+    }
+
+    function clearPin() {
+      document.getElementById('loginPin').value = "";
+    }
+
+    // Modifica la función login para tomar el teléfono del paso 1
+    async function login() {
+      const phone = document.getElementById('loginPhone').value.trim();
+      const pin = document.getElementById('loginPin').value.trim();
+
+      if (!/^\d{10}$/.test(phone)) {
+        alert("Número de teléfono inválido.");
+        backToPhone();
+        return;
+      }
+      if (pin.length !== 4) {
+        alert("El PIN debe tener 4 dígitos.");
+        return;
+      }
+
+      // Buscar usuario en la tabla usuarios
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('phone_number', phone)
+        .eq('pin', pin)
+        .single();
+
+      if (error || !data) {
+        alert("Usuario o PIN incorrecto.");
+        clearPin();
+        return;
+      }
+
+      // Guardar usuario en sessionStorage
+      sessionStorage.setItem('currentUser', JSON.stringify(data));
+
+      // Redirigir: si es admin y entra por aquí, va a home.html
+      window.location.href = "home.html";
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const splashImg = document.getElementById('splashImg');
+      // Animación: crece y se achica suavemente varias veces
+      let scale = 1;
+      let growing = true;
+      let steps = 0;
+      const interval = setInterval(() => {
+        if (growing) {
+          scale = 1.18;
+        } else {
+          scale = 0.92;
+        }
+        splashImg.style.transform = `scale(${scale})`;
+        growing = !growing;
+        steps++;
+        if (steps > 4) { // 5 cambios (3 segundos aprox)
+          clearInterval(interval);
+          splashImg.style.transform = "scale(1)";
+          setTimeout(() => {
+            document.getElementById('splash').style.opacity = '0';
+            setTimeout(() => {
+              document.getElementById('splash').style.display = 'none';
+            }, 400);
+          }, 400);
+        }
+      }, 600);
+    });
+  </script>
+</body>
+</html>

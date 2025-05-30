@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel Admin</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope&display=swap" rel="stylesheet">
+  <style>
+    body {
+      padding-bottom: 90px;
+      background: #ebe7f5;
+      font-family: 'Manrope', sans-serif;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px #db008233;
+      padding: 32px;
+      margin: 32px auto;
+      max-width: 900px;
+    }
+    nav {
+      background: #f0eff4;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      left: 0;
+      border-top: 1px solid #ddd;
+      z-index: 2;
+    }
+    nav button {
+      background: none;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #1f0020;
+      font-size: 1em;
+      padding: 0 8px;
+    }
+    nav img {
+      width: 32px;
+      height: 32px;
+      margin-bottom: 4px;
+    }
+    .crud-section h3 { color: #db0082; }
+    .crud-section table { width: 100%; margin-bottom: 24px; border-collapse: collapse; }
+    .crud-section th, .crud-section td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    .crud-section th { background: #ebe7f5; }
+    .crud-section input[type="text"], .crud-section input[type="number"], .crud-section input[type="password"] { padding: 6px; margin: 2px 0; border-radius: 6px; border: 1px solid #ccc; }
+    .crud-section button { background: #db0082; color: #fff; border: none; border-radius: 8px; padding: 6px 16px; margin: 2px 0; cursor: pointer; }
+    .crud-section button.delete { background: #c00; }
+    .crud-section .success { color: #090; }
+    .crud-section .error { color: #c00; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Tarjeta principal para el panel admin -->
+  <div id="adminSection" class="card">
+    <h2>Panel de Administración</h2>
+    <div id="adminMenu" style="margin-bottom:24px;">
+      <button onclick="mostrarCRUD('create')">Crear Usuario</button>
+      <button onclick="mostrarCRUD('read')">Consultar Tablas</button>
+      <button onclick="mostrarCRUD('join')">Movimientos (JOIN)</button>
+      <button onclick="mostrarCRUD('update')">Modificar Saldos</button>
+      <button onclick="mostrarCRUD('delete')">Eliminar Usuario</button>
+      <button onclick="logout()">Salir</button>
+    </div>
+    <div id="crudContent" class="crud-section"></div>
+  </div>
+
+  <!-- Barra de navegación inferior -->
+  <nav>
+    <button onclick="window.location.href='admin.html'">
+      <img src="home.png" alt="Inicio">
+      <span>Inicio</span>
+    </button>
+    <button onclick="showConsulta()">
+      <img src="consultas.png" alt="Consultas">
+      <span>Consultas</span>
+    </button>
+    <button onclick="logout()">
+      <img src="salir.png" alt="Salir">
+      <span>Salir</span>
+    </button>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    // Configuración de Supabase
+    const SUPABASE_URL = "https://dkpdzlikwcxgjwiadcdf.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrcGR6bGlrd2N4Z2p3aWFkY2RmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1NTQxNDUsImV4cCI6MjA2NDEzMDE0NX0.th8nhlOxTVg2NSbMRin8KljYNr4TW1Re9xkoaaGuYdQ";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Mostrar solo la sección de consultas (CRUD)
+    function showConsulta() {
+      document.getElementById('adminSection').classList.remove('hidden');
+      mostrarCRUD('read');
+    }
+
+    function logout() {
+      sessionStorage.removeItem('currentUser');
+      window.location.href = "index.html";
+    }
+
+    function mostrarCRUD(tipo) {
+      if (tipo === 'create') mostrarCrearUsuario();
+      if (tipo === 'read') mostrarTablas();
+      if (tipo === 'join') mostrarMovimientosJoin();
+      if (tipo === 'update') mostrarModificarSaldos();
+      if (tipo === 'delete') mostrarEliminarUsuario();
+    }
+
+    // CREATE
+    function mostrarCrearUsuario() {
+      document.getElementById('crudContent').innerHTML = `
+        <h3>Crear Usuario</h3>
+        <input type="text" id="nuevoNombre" placeholder="Nombre">
+        <input type="text" id="nuevoApellido" placeholder="Apellido">
+        <input type="text" id="nuevoTelefono" placeholder="Teléfono (10 dígitos)">
+        <input type="password" id="nuevoPin" placeholder="PIN (4 dígitos)">
+        <button onclick="crearUsuarioAdmin()">Crear</button>
+        <div id="mensajeAdmin"></div>
+      `;
+    }
+
+    async function crearUsuarioAdmin() {
+      const nombre = document.getElementById('nuevoNombre').value.trim();
+      const apellido = document.getElementById('nuevoApellido').value.trim();
+      const telefono = document.getElementById('nuevoTelefono').value.trim();
+      const pin = document.getElementById('nuevoPin').value.trim();
+      const mensaje = document.getElementById('mensajeAdmin');
+      mensaje.className = "error";
+
+      if (!/^\d{10}$/.test(telefono)) {
+        mensaje.textContent = "Teléfono inválido.";
+        return;
+      }
+      if (pin.length !== 4) {
+        mensaje.textContent = "El PIN debe tener 4 dígitos.";
+        return;
+      }
+
+      // Crear usuario
+      const { error: errorUsuario } = await supabase
+        .from('usuarios')
+        .insert([{ phone_number: telefono, nombre, apellido, pin, es_admin: false }]);
+
+      if (errorUsuario) {
+        mensaje.textContent = "Error al crear usuario.";
+        return;
+      }
+
+      // Crear cuenta asociada
+      await supabase
+        .from('cuentas')
+        .insert([{ usuario_id: telefono, monto: 0, tipo: 'publica' }]);
+
+      mensaje.className = "success";
+      mensaje.textContent = "Usuario creado exitosamente.";
+    }
+
+    // READ
+    async function mostrarTablas() {
+      let html = "";
+
+      // Usuarios
+      let usuarios = [];
+      let cuentas = [];
+      let movimientos = [];
+      let errorMsg = "";
+
+      try {
+        const resUsuarios = await supabase.from('usuarios').select('*');
+        if (resUsuarios.error) errorMsg += "Error al consultar usuarios. ";
+        else usuarios = resUsuarios.data || [];
+      } catch {
+        errorMsg += "Error al consultar usuarios. ";
+      }
+
+      try {
+        const resCuentas = await supabase.from('cuentas').select('*');
+        if (resCuentas.error) errorMsg += "Error al consultar cuentas. ";
+        else cuentas = resCuentas.data || [];
+      } catch {
+        errorMsg += "Error al consultar cuentas. ";
+      }
+
+      try {
+        const resMovimientos = await supabase.from('movimientos').select('*');
+        if (resMovimientos.error) errorMsg += "Error al consultar movimientos. ";
+        else movimientos = resMovimientos.data || [];
+      } catch {
+        errorMsg += "Error al consultar movimientos. ";
+      }
+
+      // Usuarios
+      html += `<h3>Usuarios</h3><table><tr>`;
+      if (usuarios.length > 0) {
+        Object.keys(usuarios[0]).forEach(key => {
+          html += `<th>${key}</th>`;
+        });
+        html += `</tr>`;
+        usuarios.forEach(u => {
+          html += `<tr>`;
+          Object.values(u).forEach(val => {
+            html += `<td>${val}</td>`;
+          });
+          html += `</tr>`;
+        });
+      } else {
+        html += `<th>No hay usuarios</th></tr>`;
+      }
+      html += `</table>`;
+
+      // Cuentas
+      html += `<h3>Cuentas</h3><table><tr>`;
+      if (cuentas.length > 0) {
+        Object.keys(cuentas[0]).forEach(key => {
+          html += `<th>${key}</th>`;
+        });
+        html += `</tr>`;
+        cuentas.forEach(c => {
+          html += `<tr>`;
+          Object.values(c).forEach(val => {
+            html += `<td>${val}</td>`;
+          });
+          html += `</tr>`;
+        });
+      } else {
+        html += `<th>No hay cuentas</th></tr>`;
+      }
+      html += `</table>`;
+
+      // Movimientos
+      html += `<h3>Movimientos</h3><table><tr>`;
+      if (movimientos.length > 0) {
+        Object.keys(movimientos[0]).forEach(key => {
+          html += `<th>${key}</th>`;
+        });
+        html += `</tr>`;
+        movimientos.forEach(m => {
+          html += `<tr>`;
+          Object.values(m).forEach(val => {
+            html += `<td>${val}</td>`;
+          });
+          html += `</tr>`;
+        });
+      } else {
+        html += `<th>No hay movimientos</th></tr>`;
+      }
+      html += `</table>`;
+
+      if (errorMsg) {
+        html = `<div class="error">${errorMsg}</div>` + html;
+      }
+
+      document.getElementById('crudContent').innerHTML = html;
+    }
+
+    // JOIN
+    async function mostrarMovimientosJoin() {
+      const { data: movimientos } = await supabase.from('movimientos').select('*');
+      const { data: usuarios } = await supabase.from('usuarios').select('phone_number, nombre, apellido');
+      const usuariosMap = {};
+      usuarios.forEach(u => {
+        usuariosMap[u.phone_number] = `${u.nombre} ${u.apellido}`;
+      });
+      let html = `<h3>Movimientos (JOIN)</h3><table><tr><th>ID</th><th>Origen</th><th>Destino</th><th>Monto</th><th>Tipo</th></tr>`;
+      movimientos.forEach(m => {
+        html += `<tr>
+          <td>${m.id}</td>
+          <td>${usuariosMap[m.usuario_origen] || m.usuario_origen}</td>
+          <td>${usuariosMap[m.usuario_destino] || m.usuario_destino}</td>
+          <td>${m.amount}</td>
+          <td>${m.tipo}</td>
+        </tr>`;
+      });
+      html += `</table>`;
+      document.getElementById('crudContent').innerHTML = html;
+    }
+
+    // UPDATE
+    async function mostrarModificarSaldos() {
+      const { data: cuentas } = await supabase.from('cuentas').select('*');
+      let html = `<h3>Modificar Saldos</h3><table><tr><th>ID</th><th>Usuario</th><th>Monto</th><th>Tipo</th><th>Actualizar</th></tr>`;
+      cuentas.forEach(c => {
+        html += `<tr>
+          <td>${c.id}</td>
+          <td>${c.usuario_id}</td>
+          <td><input type="number" id="montoCuenta${c.id}" value="${c.monto}"></td>
+          <td>${c.tipo}</td>
+          <td><button onclick="actualizarMontoCuenta('${c.id}')">Actualizar</button></td>
+        </tr>`;
+      });
+      html += `</table>`;
+      document.getElementById('crudContent').innerHTML = html;
+    }
+
+    async function actualizarMontoCuenta(id) {
+      const nuevoMonto = parseFloat(document.getElementById('montoCuenta' + id).value);
+      if (isNaN(nuevoMonto)) return;
+      await supabase.from('cuentas').update({ monto: nuevoMonto }).eq('id', id);
+      mostrarModificarSaldos();
+    }
+
+    // DELETE
+    async function mostrarEliminarUsuario() {
+      const { data: usuarios } = await supabase.from('usuarios').select('*');
+      let html = `<h3>Eliminar Usuario</h3><table><tr><th>Nombre</th><th>Apellido</th><th>Teléfono</th><th>Eliminar</th></tr>`;
+      usuarios.forEach(u => {
+        html += `<tr>
+          <td>${u.nombre}</td>
+          <td>${u.apellido}</td>
+          <td>${u.phone_number}</td>
+          <td><button class="delete" onclick="eliminarUsuarioAdmin('${u.phone_number}')">Eliminar</button></td>
+        </tr>`;
+      });
+      html += `</table>`;
+      document.getElementById('crudContent').innerHTML = html;
+    }
+
+    async function eliminarUsuarioAdmin(phone) {
+      await supabase.from('movimientos').delete().or(`usuario_origen.eq.${phone},usuario_destino.eq.${phone}`);
+      await supabase.from('bolsillo').delete().eq('usuario', phone);
+      await supabase.from('cuentas').delete().eq('usuario_id', phone);
+      await supabase.from('usuarios').delete().eq('phone_number', phone);
+      mostrarEliminarUsuario();
+    }
+
+    // Mostrar por defecto la consulta de tablas al cargar
+    window.onload = () => {
+      mostrarCRUD('read');
+    };
+  </script>
+</body>
+</html>

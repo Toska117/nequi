@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi App Financiera</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      padding-bottom: 90px;
+      background: #ebe7f5;
+    }
+    nav {
+      background: #f0eff4;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      left: 0;
+      border-top: 1px solid #ddd;
+      z-index: 2;
+    }
+    nav button {
+      background: none;
+      border: none;
+      font: inherit;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #333;
+    }
+    nav img {
+      width: 28px;
+      height: 28px;
+      margin-bottom: 2px;
+    }
+    .dropdown {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #ebe7f5;
+      min-width: 180px;
+      box-shadow: 0px 2px 8px 0px rgba(0,0,0,0.15);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 8px;
+      border: 2px solid #db0082;
+    }
+    .dropdown.show .dropdown-content {
+      display: block;
+    }
+    .dropdown-btn {
+      background: none;
+      border: none;
+      font-size: 1.5em;
+      cursor: pointer;
+      color: #333;
+    }
+    .perfil-nombre {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .perfil-apellido {
+      color: #666;
+      margin-bottom: 12px;
+    }
+    .salir-btn {
+      background: #f0eff4;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #333;
+      font-weight: bold;
+    }
+    .salir-separado {
+      margin-top: 8px;
+    }
+    header {
+      padding-top: 30px;
+      padding-bottom: 10px;
+      text-align: center;
+    }
+    /* Recuadros morados con borde orquídea y efecto 3D */
+    .card, #balanceSection, #consultaSection, #historySection {
+      background: #1f0020;
+      border: 3px solid #db0082;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px 0 #db0082, 0 2px 8px 0 rgba(0,0,0,0.10);
+      color: #ebe7f5;
+      margin: 18px 0;
+      padding: 18px 18px 12px 18px;
+    }
+    #balanceSection {
+      margin-top: 18px;
+    }
+    /* Modal estético */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: auto;
+      background-color: rgba(31,0,32,0.3);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #1f0020;
+      padding: 24px 20px;
+      border-radius: 16px;
+      min-width: 300px;
+      max-width: 90vw;
+      box-shadow: 0 4px 16px 0 #db0082, 0 2px 8px 0 rgba(0,0,0,0.10);
+      text-align: center;
+      position: relative;
+      border: 3px solid #db0082;
+      color: #ebe7f5;
+    }
+    .modal-content input {
+      width: 90%;
+      margin: 8px 0;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #db0082;
+      background: #ebe7f5;
+      color: #1f0020;
+    }
+    .modal-content button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      border-radius: 5px;
+      border: none;
+      background: #db0082;
+      color: #ebe7f5;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 8px 0 #db0082;
+    }
+    .close-modal {
+      position: absolute;
+      top: 12px;
+      right: 18px;
+      font-size: 1.5em;
+      color: #ebe7f5;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .floating-btn {
+      position: fixed;
+      bottom: 80px;
+      right: 24px;
+      background: #db0082;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px #db0082, 0 2px 8px 0 rgba(0,0,0,0.10);
+      border: 3px solid #ebe7f5;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+      cursor: pointer;
+    }
+    .floating-btn img {
+      width: 32px;
+      height: 32px;
+      margin-bottom: 2px;
+    }
+    .floating-btn span {
+      font-size: 0.8em;
+      color: #ebe7f5;
+      margin-top: 2px;
+    }
+    /* Ajuste para listas dentro de recuadros */
+    #historySection ul, #consultaSection ul {
+      color: #ebe7f5;
+    }
+  </style>
+</head>
+<body>
+  <div id="dashboardPage">
+    <!-- Menú desplegable arriba a la izquierda -->
+    <div class="dropdown" id="dropdownMenu">
+      <button class="dropdown-btn" onclick="toggleDropdown()">☰</button>
+      <div class="dropdown-content" id="dropdownContent">
+        <div class="perfil-nombre" id="perfilNombre"></div>
+        <div class="perfil-apellido" id="perfilApellido"></div>
+        <button class="salir-btn" onclick="abrirModalCambiarPin()">Cambiar contraseña</button>
+        <button class="salir-btn salir-separado" onclick="abrirModalEliminarCuenta()">Eliminar cuenta</button>
+        <button class="salir-btn salir-separado" onclick="logout()">Salir</button>
+      </div>
+    </div>
+    <header>
+      <h1 id="saludoUsuario">Hola, </h1>
+    </header>
+    <div class="container">
+      <div id="balanceSection">
+        <h2>Saldo</h2>
+        <p id="balanceText">Saldo disponible: $0</p>
+      </div>
+      <div id="historySection" class="card hidden">
+        <h2>Movimientos</h2>
+        <ul id="transactionList"></ul>
+      </div>
+      <div id="consultaSection" class="card hidden">
+        <h2>Consultas</h2>
+        <p>Ingresa como administrador para acceder a este apartado.</p>
+      </div>
+    </div>
+    <nav>
+      <button onclick="showBalance()">
+        <img src="inicio.png" alt="Inicio">
+        <span>Inicio</span>
+      </button>
+      <button onclick="showHistory()">
+        <img src="movimientos.png" alt="Movimientos">
+        <span>Movimientos</span>
+      </button>
+      <button onclick="showConsulta()">
+        <img src="consultas.png" alt="Consultas">
+        <span>Consultas</span>
+      </button>
+    </nav>
+    <!-- Botón flotante para consignar -->
+    <button class="floating-btn" onclick="abrirModalConsignar()">
+      <img src="consignar.png" alt="Consignar">
+    </button>
+    <!-- Botón central para retirar de cajero -->
+    <div id="consignarPropio" style="display:flex;flex-direction:column;align-items:center;margin:32px 0 0 0;">
+      <button onclick="abrirModalConsignarPropio()" style="background:#ebe7f5;border:3px solid #db0082;border-radius:16px;padding:18px 32px;box-shadow:0 4px 16px #db0082;display:flex;flex-direction:column;align-items:center;cursor:pointer;">
+        <img src="cerdo.png" alt="Retirar de cajero" style="width:60px;height:60px;margin-bottom:8px;">
+        <span style="color:#1f0020;font-size:1.2em;font-weight:bold;">Retirar de cajero</span>
+      </button>
+    </div>
+    <!-- Modal estético para consignar -->
+    <div class="modal" id="modalConsignar">
+      <div class="modal-content">
+        <button class="close-modal" onclick="cerrarModalConsignar()">&times;</button>
+        <h3>Enviar dinero</h3>
+        <input type="text" placeholder="Número destino">
+        <input type="number" placeholder="Monto a enviar">
+        <button>Enviar</button>
+      </div>
+    </div>
+    <!-- Modal para cambiar contraseña -->
+    <div class="modal" id="modalCambiarPin">
+      <div class="modal-content">
+        <button class="close-modal" onclick="cerrarModalCambiarPin()">&times;</button>
+        <h3>Cambiar PIN</h3>
+        <input type="password" id="pinActual" placeholder="PIN actual">
+        <input type="password" id="pinNuevo" placeholder="Nuevo PIN (4 dígitos)">
+        <button onclick="cambiarPin()">Cambiar</button>
+        <div id="mensajePin" style="margin-top:10px;"></div>
+      </div>
+    </div>
+    <!-- Modal para retirar de cajero -->
+    <div class="modal" id="modalConsignarPropio">
+      <div class="modal-content">
+        <button class="close-modal" onclick="cerrarModalConsignarPropio()">&times;</button>
+        <h3>Retirar dinero en físico</h3>
+        <input type="number" id="montoConsignarPropio" placeholder="Monto a retirar">
+        <button onclick="consignarPropio()">Retirar</button>
+        <div id="mensajeConsignarPropio" style="margin-top:10px;"></div>
+      </div>
+    </div>
+    <!-- Modal para eliminar cuenta -->
+    <div class="modal" id="modalEliminarCuenta">
+      <div class="modal-content">
+        <button class="close-modal" onclick="cerrarModalEliminarCuenta()">&times;</button>
+        <h3>¿Seguro que quieres eliminar tu cuenta?</h3>
+        <p>Esta acción es irreversible. Todo tu saldo será transferido a la cuenta 3166144541.</p>
+        <button onclick="eliminarCuenta()" style="background:#db0082;color:#ebe7f5;">Eliminar definitivamente</button>
+        <div id="mensajeEliminarCuenta" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Mostrar nombre y apellido en saludo y menú
+    document.addEventListener("DOMContentLoaded", function() {
+      const user = JSON.parse(sessionStorage.getItem('currentUser'));
+      if (user) {
+        document.getElementById('saludoUsuario').textContent = `Hola, ${user.nombre}`;
+        document.getElementById('perfilNombre').textContent = user.nombre;
+        document.getElementById('perfilApellido').textContent = user.apellido ? user.apellido : '';
+      }
+    });
+
+    // Menú desplegable
+    function toggleDropdown() {
+      document.getElementById('dropdownMenu').classList.toggle('show');
+    }
+    // Cerrar menú si se hace click fuera
+    window.onclick = function(event) {
+      if (!event.target.matches('.dropdown-btn')) {
+        var dropdowns = document.getElementsByClassName("dropdown");
+        for (var i = 0; i < dropdowns.length; i++) {
+          var openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+    // Abrir y cerrar modal estético
+    function abrirModalConsignar() {
+      document.getElementById('modalConsignar').style.display = 'flex';
+    }
+    function cerrarModalConsignar() {
+      document.getElementById('modalConsignar').style.display = 'none';
+    }
+
+    async function consignarDinero() {
+      const user = JSON.parse(sessionStorage.getItem('currentUser'));
+      const inputs = document.querySelectorAll('#modalConsignar input');
+      const numeroDestino = inputs[0].value.trim();
+      const montoEnviar = parseFloat(inputs[1].value);
+      const mensaje = document.createElement('div');
+      mensaje.style.marginTop = "10px";
+      mensaje.style.color = "#c00";
+
+      // Validaciones básicas
+      if (!numeroDestino || isNaN(montoEnviar) || montoEnviar <= 0) {
+        mensaje.textContent = "Datos inválidos.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+      if (numeroDestino === user.phone_number) {
+        mensaje.textContent = "No puedes enviarte dinero a ti mismo.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+
+      // 1. Consultar cuenta origen (usuario actual)
+      const { data: cuentasOrigen, error: errorOrigen } = await supabase
+        .from('cuentas')
+        .select('*')
+        .eq('usuario_id', user.phone_number)
+        .eq('tipo', 'publica')
+        .limit(1);
+
+      if (errorOrigen || !cuentasOrigen || cuentasOrigen.length === 0) {
+        mensaje.textContent = "Error al consultar tu cuenta.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+      if (cuentasOrigen[0].monto < montoEnviar) {
+        mensaje.textContent = "Saldo insuficiente.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+
+      // 2. Consultar cuenta destino
+      const { data: cuentasDestino, error: errorDestino } = await supabase
+        .from('cuentas')
+        .select('*')
+        .eq('usuario_id', numeroDestino)
+        .eq('tipo', 'publica')
+        .limit(1);
+
+      if (errorDestino || !cuentasDestino || cuentasDestino.length === 0) {
+        mensaje.textContent = "Cuenta destino no encontrada.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+
+      // 3. Actualizar cuentas y registrar movimiento
+      // Restar al origen
+      const { error: errorUpdateOrigen } = await supabase
+        .from('cuentas')
+        .update({ monto: cuentasOrigen[0].monto - montoEnviar })
+        .eq('id', cuentasOrigen[0].id);
+
+      // Sumar al destino
+      const { error: errorUpdateDestino } = await supabase
+        .from('cuentas')
+        .update({ monto: cuentasDestino[0].monto + montoEnviar })
+        .eq('id', cuentasDestino[0].id);
+
+      // Registrar movimiento
+      await supabase
+        .from('movimientos')
+        .insert([{
+          usuario_origen: user.phone_number,
+          usuario_destino: numeroDestino,
+          amount: montoEnviar,
+          tipo: 'envio'
+        }]);
+
+      if (errorUpdateOrigen || errorUpdateDestino) {
+        mensaje.textContent = "Error al transferir dinero.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+
+      mensaje.style.color = "#090";
+      mensaje.textContent = "¡Dinero enviado exitosamente!";
+      mostrarMensajeModal(mensaje);
+      await showBalance();
+      setTimeout(() => {
+        cerrarModalConsignar();
+      }, 1200);
+    }
+
+    // Muestra mensaje en el modal
+    function mostrarMensajeModal(elemento) {
+      let modal = document.querySelector('#modalConsignar .modal-content');
+      let viejo = modal.querySelector('.mensaje-consignar');
+      if (viejo) viejo.remove();
+      elemento.className = "mensaje-consignar";
+      modal.appendChild(elemento);
+    }
+
+    // Asignar evento al botón "Enviar" del modal
+    document.addEventListener("DOMContentLoaded", function() {
+      const btnEnviar = document.querySelector('#modalConsignar .modal-content button:not(.close-modal)');
+      if (btnEnviar) {
+        btnEnviar.onclick = consignarDinero;
+      }
+    });
+
+    // Modal cambiar PIN
+    function abrirModalCambiarPin() {
+      document.getElementById('modalCambiarPin').style.display = 'flex';
+      document.getElementById('pinActual').value = '';
+      document.getElementById('pinNuevo').value = '';
+      document.getElementById('mensajePin').textContent = '';
+    }
+    function cerrarModalCambiarPin() {
+      document.getElementById('modalCambiarPin').style.display = 'none';
+    }
+
+    async function cambiarPin() {
+      const user = JSON.parse(sessionStorage.getItem('currentUser'));
+      const pinActual = document.getElementById('pinActual').value;
+      const pinNuevo = document.getElementById('pinNuevo').value;
+      const mensaje = document.getElementById('mensajePin');
+      mensaje.style.color = "#c00";
+
+      if (!pinActual || !pinNuevo || pinNuevo.length !== 4) {
+        mensaje.textContent = "Debes ingresar ambos PINs y el nuevo debe tener 4 dígitos.";
+        return;
+      }
+
+      // Verificar PIN actual
+      const { data: usuario, error } = await supabase
+        .from('usuarios')
+        .select('pin')
+        .eq('phone_number', user.phone_number)
+        .maybeSingle();
+
+      if (error || !usuario || usuario.pin !== pinActual) {
+        mensaje.textContent = "El PIN actual es incorrecto.";
+        return;
+      }
+
+      // Actualizar PIN
+      const { error: errorUpdate } = await supabase
+        .from('usuarios')
+        .update({ pin: pinNuevo })
+        .eq('phone_number', user.phone_number);
+
+      if (errorUpdate) {
+        mensaje.textContent = "Error al cambiar el PIN.";
+        return;
+      }
+
+      mensaje.style.color = "#090";
+      mensaje.textContent = "¡PIN cambiado exitosamente!";
+      setTimeout(() => {
+        cerrarModalCambiarPin();
+      }, 1200);
+    }
+
+    // Consignar a propia cuenta
+    function abrirModalConsignarPropio() {
+      document.getElementById('modalConsignarPropio').style.display = 'flex';
+      document.getElementById('montoConsignarPropio').value = '';
+      document.getElementById('mensajeConsignarPropio').textContent = '';
+    }
+    function cerrarModalConsignarPropio() {
+      document.getElementById('modalConsignarPropio').style.display = 'none';
+    }
+
+    async function consignarPropio() {
+      const user = JSON.parse(sessionStorage.getItem('currentUser'));
+      const monto = parseFloat(document.getElementById('montoConsignarPropio').value);
+      const mensaje = document.getElementById('mensajeConsignarPropio');
+      mensaje.style.color = "#c00";
+
+      if (isNaN(monto) || monto <= 0) {
+        mensaje.textContent = "Monto inválido.";
+        return;
+      }
+
+      // 1. Consultar cuenta origen (usuario actual)
+      const { data: cuentasOrigen, error: errorOrigen } = await supabase
+        .from('cuentas')
+        .select('*')
+        .eq('usuario_id', user.phone_number)
+        .eq('tipo', 'publica')
+        .limit(1);
+
+      if (errorOrigen || !cuentasOrigen || cuentasOrigen.length === 0) {
+        mensaje.textContent = "Error al consultar tu cuenta.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+      if (cuentasOrigen[0].monto < monto) {
+        mensaje.textContent = "Saldo insuficiente.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+
+      // 2. Actualizar cuenta origen y registrar movimiento
+      // Restar al origen
+      const { error: errorUpdateOrigen } = await supabase
+        .from('cuentas')
+        .update({ monto: cuentasOrigen[0].monto - monto })
+        .eq('id', cuentasOrigen[0].id);
+
+      // Registrar movimiento
+      await supabase
+        .from('movimientos')
+        .insert([{
+          usuario_origen: user.phone_number,
+          usuario_destino: user.phone_number,
+          amount: monto,
+          tipo: 'consignacion'
+        }]);
+
+      if (errorUpdateOrigen) {
+        mensaje.textContent = "Error al consignar dinero.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+
+      mensaje.style.color = "#090";
+      mensaje.textContent = "¡Dinero consignado exitosamente!";
+      mostrarMensajeModal(mensaje);
+      await showBalance();
+      setTimeout(() => {
+        cerrarModalConsignarPropio();
+      }, 1200);
+    }
+
+    // Eliminar cuenta
+    function abrirModalEliminarCuenta() {
+      document.getElementById('modalEliminarCuenta').style.display = 'flex';
+    }
+    function cerrarModalEliminarCuenta() {
+      document.getElementById('modalEliminarCuenta').style.display = 'none';
+    }
+
+    async function eliminarCuenta() {
+      const user = JSON.parse(sessionStorage.getItem('currentUser'));
+      const mensaje = document.getElementById('mensajeEliminarCuenta');
+      mensaje.style.color = "#c00";
+
+      // 1. Consultar cuenta origen (usuario actual)
+      const { data: cuentasOrigen, error: errorOrigen } = await supabase
+        .from('cuentas')
+        .select('*')
+        .eq('usuario_id', user.phone_number)
+        .eq('tipo', 'publica')
+        .limit(1);
+
+      if (errorOrigen || !cuentasOrigen || cuentasOrigen.length === 0) {
+        mensaje.textContent = "Error al consultar tu cuenta.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+
+      // 2. Transferir saldo a cuenta 3166144541 (cuenta de la empresa)
+      const cuentaDestino = '3166144541';
+      const montoTransferir = cuentasOrigen[0].monto;
+
+      // Sumar al destino
+      const { data: cuentaEmpresa, error: errorEmpresa } = await supabase
+        .from('cuentas')
+        .select('*')
+        .eq('usuario_id', cuentaDestino)
+        .eq('tipo', 'publica')
+        .limit(1);
+
+      if (errorEmpresa || !cuentaEmpresa || cuentaEmpresa.length === 0) {
+        mensaje.textContent = "Error al encontrar la cuenta destino.";
+        mostrarMensajeModal(mensaje);
+        return;
+      }
+
+      const nuevoSaldoEmpresa = cuentaEmpresa[0].monto + montoTransferir;
+
+      await supabase
+        .from('cuentas')
+        .update({ monto: nuevoSaldoEmpresa })
+        .eq('id', cuentaEmpresa[0].id);
+
+      // 3. Eliminar movimientos, bolsillos, cuentas y usuario
+      await supabase.from('movimientos').delete().or(`usuario_origen.eq.${user.phone_number},usuario_destino.eq.${user.phone_number}`);
+      await supabase.from('bolsillo').delete().eq('usuario', user.phone_number);
+      await supabase.from('cuentas').delete().eq('usuario_id', user.phone_number);
+      await supabase.from('usuarios').delete().eq('phone_number', user.phone_number);
+
+      // Limpiar sesión y redirigir
+      sessionStorage.removeItem('currentUser');
+      window.location.href = "index.html";
+    }
+
+    async function showConsulta() {
+      document.getElementById('balanceSection').classList.add('hidden');
+      document.getElementById('historySection').classList.add('hidden');
+      document.getElementById('consultaSection').classList.remove('hidden');
+
+      const user = JSON.parse(sessionStorage.getItem('currentUser'));
+      const consultaSection = document.getElementById('consultaSection');
+      // Mensaje por defecto
+      consultaSection.innerHTML = `<h2>No eres admin</h2>`;
+
+      // Detectar admin por defecto
+      if (user.phone_number === "3166144541") {
+        // Consultar todos los usuarios
+        const { data: usuarios, error: errorUsuarios } = await supabase
+          .from('usuarios')
+          .select('*');
+
+        if (errorUsuarios) {
+          consultaSection.innerHTML = "<h2>¿QUÉ QUIERES HACER ADMIN?</h2><p>Error al consultar la tabla usuarios.</p>";
+          return;
+        }
+
+        let tabla = `
+          <h2>¿QUÉ QUIERES HACER ADMIN?</h2>
+          <h3>Usuarios</h3>
+          <table border="1" style="width:100%;background:#ebe7f5;color:#1f0020;">
+            <tr>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Teléfono</th>
+              <th>Admin</th>
+            </tr>
+        `;
+        usuarios.forEach(u => {
+          tabla += `
+            <tr>
+              <td>${u.nombre}</td>
+              <td>${u.apellido}</td>
+              <td>${u.phone_number}</td>
+              <td>${u.es_admin ? "Sí" : "No"}</td>
+            </tr>
+          `;
+        });
+        tabla += `</table>`;
+        consultaSection.innerHTML = tabla;
+        return;
+      }
+
+      // Si no es admin por defecto, consulta en Supabase
+      const { data: usuario, error } = await supabase
+        .from('usuarios')
+        .select('es_admin')
+        .eq('phone_number', user.phone_number)
+        .maybeSingle();
+
+      if (error || !usuario) {
+        return;
+      }
+
+      if (usuario.es_admin === true || usuario.es_admin === "TRUE" || usuario.es_admin === 1) {
+        // Consultar todos los usuarios
+        const { data: usuarios, error: errorUsuarios } = await supabase
+          .from('usuarios')
+          .select('*');
+
+        if (errorUsuarios) {
+          consultaSection.innerHTML = "<h2>¿QUÉ QUIERES HACER ADMIN?</h2><p>Error al consultar la tabla usuarios.</p>";
+          return;
+        }
+
+        let tabla = `
+          <h2>¿QUÉ QUIERES HACER ADMIN?</h2>
+          <h3>Usuarios</h3>
+          <table border="1" style="width:100%;background:#ebe7f5;color:#1f0020;">
+            <tr>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Teléfono</th>
+              <th>Admin</th>
+            </tr>
+        `;
+        usuarios.forEach(u => {
+          tabla += `
+            <tr>
+              <td>${u.nombre}</td>
+              <td>${u.apellido}</td>
+              <td>${u.phone_number}</td>
+              <td>${u.es_admin ? "Sí" : "No"}</td>
+            </tr>
+          `;
+        });
+        tabla += `</table>`;
+        consultaSection.innerHTML = tabla;
+      }
+    }
+  </script>
+</body>
+</html>
